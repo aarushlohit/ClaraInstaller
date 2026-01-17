@@ -2,7 +2,7 @@ import subprocess
 
 def run_ps(cmd, show=False):
     result = subprocess.run(
-        ["powershell", "-Command", cmd],
+        ["powershell", "-NoProfile", "-Command", cmd],
         capture_output=True,
         text=True
     )
@@ -41,20 +41,21 @@ while True:
     except ValueError:
         print("❌ Enter a valid number")
 
-# ---------------- SHRINK WINDOWS ----------------
+# ---------------- SHRINK WINDOWS (FIXED) ----------------
 print("\n[INFO] Shrinking Windows OS partition...")
 
 code = run_ps(
     "$bp = Get-Partition | Where-Object IsBoot -eq $true | Select-Object -First 1;"
     "$vol = Get-Volume -Partition $bp;"
     "$sup = Get-PartitionSupportedSize -Partition $bp;"
-    f"$new = $vol.Size - {sizeGB}GB;"
+    f"$shrink = {sizeGB} * 1GB;"
+    "$new = $vol.Size - $shrink;"
     "if($new -lt $sup.SizeMin){ exit 1 };"
     "Resize-Partition -Partition $bp -Size $new"
 )
 
 if code != 0:
-    print("❌ Shrink failed (not enough space)")
+    print("❌ Shrink failed (Windows limitation, not Python)")
     exit(1)
 
 print("✔ Windows partition shrunk")
