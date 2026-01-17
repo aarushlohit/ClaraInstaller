@@ -1,8 +1,9 @@
 import subprocess
 
 def run_ps(cmd, show=False):
+    full_cmd = f'powershell -Command "{cmd}"'
     result = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", cmd],
+        ["cmd.exe", "/c", full_cmd],
         capture_output=True,
         text=True
     )
@@ -20,7 +21,7 @@ while True:
     diskNum = input("\nEnter target disk number (must contain Windows OS): ").strip()
 
     code = run_ps(
-        "$bp = Get-Partition | Where-Object IsBoot -eq $true | Select-Object -First 1;"
+        "$bp = Get-Partition | Where-Object IsBoot -eq $true;"
         "if(!$bp){ exit 2 };"
         f"if($bp.DiskNumber -eq {diskNum}){{ exit 0 }} else {{ exit 1 }}"
     )
@@ -41,21 +42,20 @@ while True:
     except ValueError:
         print("❌ Enter a valid number")
 
-# ---------------- SHRINK WINDOWS (FIXED) ----------------
+# ---------------- SHRINK WINDOWS (C METHOD) ----------------
 print("\n[INFO] Shrinking Windows OS partition...")
 
 code = run_ps(
-    "$bp = Get-Partition | Where-Object IsBoot -eq $true | Select-Object -First 1;"
+    "$bp = Get-Partition | Where-Object IsBoot -eq $true;"
     "$vol = Get-Volume -Partition $bp;"
     "$sup = Get-PartitionSupportedSize -Partition $bp;"
-    f"$shrink = {sizeGB} * 1GB;"
-    "$new = $vol.Size - $shrink;"
+    f"$new = $vol.Size - {sizeGB}GB;"
     "if($new -lt $sup.SizeMin){ exit 1 };"
     "Resize-Partition -Partition $bp -Size $new"
 )
 
 if code != 0:
-    print("❌ Shrink failed (Windows limitation, not Python)")
+    print("❌ Shrink failed (Windows limitation)")
     exit(1)
 
 print("✔ Windows partition shrunk")
