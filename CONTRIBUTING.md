@@ -22,7 +22,7 @@ Thanks for your interest in Clara Desktop Installer.
 - **Single-file design**: All installer logic stays in `Code/main.py`. Do not split into modules.
 - **Windows-native**: Prefer PowerShell, cmd, and `subprocess` over third-party packages.
 - **UEFI + BIOS**: Every feature must work on both firmware types unless explicitly documented.
-- **No new dependencies**: The tool must run on a stock Windows 10/11 install.
+- **No new dependencies**: The tool must run on a stock Windows 10/11 install. The one exception is the **Windows ADK Deployment Tools** — if `bootsect.exe` is missing on a BIOS system, the script downloads and installs it automatically.
 - **Tests required**: Every function should have at least one passing and one failure test.
 
 ## Coding Style

@@ -318,32 +318,126 @@ class TestConfigureEfiBoot(unittest.TestCase):
 
 
 class TestConfigureBiosBoot(unittest.TestCase):
+    @patch("main.ensure_bootsect")
     @patch("main._set_partition_active_by_letter")
     @patch("main._run_bootsect")
-    def test_bossect_success_partition_active(self, mock_bootsect, mock_active):
+    def test_bossect_success_partition_active(self, mock_bootsect, mock_active, mock_ensure):
+        mock_ensure.return_value = True
         mock_bootsect.return_value = True
         mock_active.return_value = True
 
         result = main.configure_bios_boot("D")
         self.assertTrue(result)
 
+    @patch("main.ensure_bootsect")
     @patch("main._set_partition_active_by_letter")
     @patch("main._run_bootsect")
-    def test_bootsect_fails_partition_succeeds(self, mock_bootsect, mock_active):
+    def test_bootsect_fails_partition_succeeds(self, mock_bootsect, mock_active, mock_ensure):
+        mock_ensure.return_value = True
         mock_bootsect.return_value = False
         mock_active.return_value = True
 
         result = main.configure_bios_boot("D")
         self.assertTrue(result)
 
+    @patch("main.ensure_bootsect")
     @patch("main._set_partition_active_by_letter")
     @patch("main._run_bootsect")
-    def test_both_fail(self, mock_bootsect, mock_active):
+    def test_both_fail(self, mock_bootsect, mock_active, mock_ensure):
+        mock_ensure.return_value = True
         mock_bootsect.return_value = False
         mock_active.return_value = False
 
         result = main.configure_bios_boot("D")
         self.assertFalse(result)
+
+
+class TestEnsureBootsect(unittest.TestCase):
+    @patch("main.shutil.which")
+    def test_already_on_path(self, mock_which):
+        mock_which.side_effect = lambda x: x if x == "bootsect.exe" else None
+        result = main.ensure_bootsect()
+        self.assertTrue(result)
+
+    @patch("main._add_adk_to_path")
+    @patch("main.shutil.which")
+    def test_found_in_adk_path(self, mock_which, mock_add):
+        mock_which.side_effect = [None, None, "bootsect.exe"]
+        mock_add.return_value = True
+        result = main.ensure_bootsect()
+        self.assertTrue(result)
+
+    @patch("builtins.input")
+    @patch("main._add_adk_to_path")
+    @patch("main.shutil.which")
+    def test_not_found_user_declines(self, mock_which, mock_add, mock_input):
+        mock_which.return_value = None
+        mock_add.return_value = False
+        mock_input.return_value = "n"
+        result = main.ensure_bootsect()
+        self.assertFalse(result)
+
+    @patch("main.run_cmd")
+    @patch("builtins.input")
+    @patch("main._add_adk_to_path")
+    @patch("main.shutil.which")
+    def test_download_fails(self, mock_which, mock_add, mock_input, mock_run):
+        mock_which.return_value = None
+        mock_add.return_value = False
+        mock_input.return_value = "y"
+        mock_run.return_value = (1, "", "SSL error")
+        result = main.ensure_bootsect()
+        self.assertFalse(result)
+
+    @patch("main.run_cmd")
+    @patch("builtins.input")
+    @patch("main._add_adk_to_path")
+    @patch("main.shutil.which")
+    def test_install_succeeds(self, mock_which, mock_add, mock_input, mock_run):
+        mock_which.side_effect = [None, None, None, "bootsect.exe"]
+        mock_add.side_effect = [False, True]
+        mock_input.return_value = "y"
+        mock_run.side_effect = [(0, "", ""), (0, "", "")]
+        result = main.ensure_bootsect()
+        self.assertTrue(result)
+
+    @patch("main.run_cmd")
+    @patch("builtins.input")
+    @patch("main._add_adk_to_path")
+    @patch("main.shutil.which")
+    def test_install_fails(self, mock_which, mock_add, mock_input, mock_run):
+        mock_which.return_value = None
+        mock_add.return_value = False
+        mock_input.return_value = "y"
+        mock_run.side_effect = [(0, "", ""), (1, "", "error 1603")]
+        result = main.ensure_bootsect()
+        self.assertFalse(result)
+
+
+class TestAddAdkToPath(unittest.TestCase):
+    @patch("main.os.path.isfile")
+    def test_found_in_adk_path(self, mock_isfile):
+        mock_isfile.side_effect = lambda p: "bootsect.exe" in p
+        result = main._add_adk_to_path()
+        self.assertTrue(result)
+
+    @patch("main.os.path.isfile")
+    def test_not_found(self, mock_isfile):
+        mock_isfile.return_value = False
+        result = main._add_adk_to_path()
+        self.assertFalse(result)
+
+    def test_actually_sets_env(self):
+        saved = os.environ.get("PATH", "")
+        try:
+            os.environ.pop("PATH", None)
+            with patch.object(main, "ADK_BOOTSECT_PATHS", ["/fake/dir/bootsect.exe"]), \
+                 patch.object(main.os.path, "isfile", return_value=True):
+                result = main._add_adk_to_path()
+                self.assertTrue(result)
+                self.assertIn("/fake/dir", os.environ.get("PATH", ""))
+        finally:
+            os.environ["PATH"] = saved
 
 
 class TestAddBcdEntry(unittest.TestCase):

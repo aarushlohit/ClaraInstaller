@@ -28,6 +28,7 @@ Dual-boot installer for **Clara Desktop Linux** from Windows, supporting both **
 - **Privileges**: Administrator (run as admin)
 - **Disk**: NTFS system drive with ≥10 GB free space
 - **Internet**: Optional — ISO can be provided locally
+- **Windows ADK** (BIOS only): Auto-installed if missing on BIOS systems
 
 ## Usage
 
@@ -55,7 +56,7 @@ This tool is interactive only. For automated deployment, modify `main.py` consta
 ```
 ├── Code/
 │   ├── main.py          # Installer logic (single file)
-│   └── test_main.py     # Test suite (55 tests)
+│   └── test_main.py     # Test suite (64 tests)
 ├── LICENSE
 ├── README.md
 ├── CONTRIBUTING.md
@@ -71,7 +72,7 @@ Windows provides native ISO mounting via `Mount-DiskImage`. Using it avoids:
 - Dependency on `py7zr` (which does not support ISO 9660)
 - Runtime failures when the download server is unavailable
 
-The entire tool runs with **zero external dependencies** beyond what ships with Windows.
+The tool runs with **zero external dependencies** beyond what ships with Windows, with one exception: on **BIOS** systems, if `bootsect.exe` is missing (it ships with Windows ADK / WinPE / WinRE), the script auto-downloads and installs the **Windows ADK Deployment Tools** (~2 GB).
 
 ## License
 

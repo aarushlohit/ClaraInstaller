@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import re
+import shutil
 
 ISO_FILENAME = "clara-desktop.iso"
 DEFAULT_ISO_URL = "https://releases.ubuntu.com/24.04/ubuntu-24.04.1-desktop-amd64.iso"
@@ -11,6 +12,15 @@ MIN_SIZE_GB = 10
 BOOT_DESC = "Clara Desktop Linux"
 FIRMWARE_UEFI = "UEFI"
 FIRMWARE_BIOS = "BIOS"
+
+ADK_DOWNLOAD_URL = "https://go.microsoft.com/fwlink/?linkid=2271338"
+ADK_INSTALLER = "adksetup.exe"
+ADK_BOOTSECT_PATHS = [
+    r"C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\bootsect.exe",
+    r"C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\x86\bootsect.exe",
+    r"C:\Program Files\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\bootsect.exe",
+    r"C:\Program Files\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\x86\bootsect.exe",
+]
 
 
 def run_ps(cmd, show=False):
@@ -259,6 +269,58 @@ def configure_efi_boot(drive_letter):
         print("⚠ No EFI file found. Boot may need manual configuration.")
 
 
+def _add_adk_to_path():
+    for p in ADK_BOOTSECT_PATHS:
+        if os.path.isfile(p):
+            d = os.path.dirname(p)
+            if d not in os.environ.get("PATH", ""):
+                os.environ["PATH"] = d + os.pathsep + os.environ.get("PATH", "")
+            return True
+    return False
+
+
+def ensure_bootsect():
+    if shutil.which("bootsect.exe") or shutil.which("bootsect"):
+        return True
+
+    if _add_adk_to_path():
+        if shutil.which("bootsect.exe") or shutil.which("bootsect"):
+            return True
+
+    print("\n⚠ bootsect.exe not found.")
+    print("  Required for BIOS boot sector writing.")
+    print(f"  Windows ADK Deployment Tools (~2 GB) will be installed.")
+    resp = input("Install Windows ADK Deployment Tools? (Y/n): ").strip().lower()
+    if resp == 'n':
+        print("⚠ Skipping ADK install. Fallback: partition active flag only.")
+        return False
+
+    installer = os.path.join(tempfile.gettempdir(), ADK_INSTALLER)
+    print(f"\n[INFO] Downloading ADK setup...")
+    rc, _, err = run_cmd(f'curl -L "{ADK_DOWNLOAD_URL}" -o "{installer}"')
+    if rc != 0:
+        print(f"❌ Download failed: {err.strip()}")
+        return False
+
+    print("[INFO] Installing Windows ADK Deployment Tools...")
+    rc, _, err = run_cmd(f'"{installer}" /quiet /features OptionId.DeploymentTools /norestart')
+    try:
+        os.remove(installer)
+    except OSError:
+        pass
+
+    if rc != 0:
+        print(f"❌ ADK install failed (exit {rc})")
+        return False
+
+    if _add_adk_to_path():
+        print("✔ bootsect.exe installed and ready")
+        return True
+
+    print("⚠ ADK installed but bootsect.exe not found in expected path")
+    return False
+
+
 def _run_bootsect(drive_letter):
     rc, _, _ = run_cmd(f"bootsect /nt60 {drive_letter}: /force")
     return rc == 0
@@ -279,6 +341,7 @@ def _set_partition_active_by_letter(drive_letter):
 def configure_bios_boot(drive_letter):
     print("\n[INFO] Configuring BIOS boot...")
 
+    ensure_bootsect()
     bootsect_ok = _run_bootsect(drive_letter)
     active_ok = _set_partition_active_by_letter(drive_letter)
 
