@@ -4,7 +4,7 @@ Thanks for your interest in Clara Desktop Installer.
 
 ## How to Contribute
 
-1. **Open an issue** first to discuss the change you'd like to make (unless it's a trivial fix).
+1. **Open an issue** at https://github.com/aarushlohit/ClaraInstaller/issues first to discuss the change you'd like to make (unless it's a trivial fix).
 2. **Fork** the repository.
 3. **Create a branch** with a descriptive name (`fix/disk-error-handling`, `feat/advanced-partitioning`).
 4. **Make your changes** — keep `Code/main.py` as a single file.

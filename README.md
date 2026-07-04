@@ -1,5 +1,8 @@
 # Clara Desktop Installer
 
+[![GitHub](https://img.shields.io/badge/repo-aarushlohit/ClaraInstaller-blue?logo=github)](https://github.com/aarushlohit/ClaraInstaller)
+[![License](https://img.shields.io/badge/license-ClaraDesktop-blue)](LICENSE)
+
 Dual-boot installer for **Clara Desktop Linux** from Windows, supporting both **UEFI** and **legacy BIOS** firmware.
 
 ## How It Works

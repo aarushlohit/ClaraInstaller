@@ -15,7 +15,7 @@ If you discover a security vulnerability in Clara Desktop Installer, please repo
 
 **Do not** open a public GitHub issue.
 
-Instead, email **aarush.lohit@example.com** (replace with actual contact) with:
+Instead, send an email to **141929019+aarushlohit@users.noreply.github.com** with:
 
 - Description of the vulnerability
 - Steps to reproduce
@@ -23,6 +23,8 @@ Instead, email **aarush.lohit@example.com** (replace with actual contact) with:
 - Any proof-of-concept if available
 
 You will receive an acknowledgment within **48 hours**, and a fix timeline within **5 business days**.
+
+For **non-security issues** (bugs, feature requests, questions), open a [GitHub Issue](https://github.com/aarushlohit/ClaraInstaller/issues/new) instead.
 
 ## Scope
 
